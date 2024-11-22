@@ -1,0 +1,33 @@
+import { errors } from "@vinejs/vine";
+
+export class CustomErrorReporter {
+  /**
+   * A flag to know if one or more errors have been
+   * reported
+   */
+  hasErrors = false;
+
+  /**
+   * A collection of errors. Feel free to give accurate types
+   * to this property
+   */
+  //make error as an object to store it as in key-value form
+  errors = {};
+
+  /**
+   * VineJS call the report method
+   */
+  report(message, rule, field, meta) {
+    this.hasErrors = true;
+
+    this.errors[field.wildCardPath] = message;
+  }
+
+  /**
+   * Creates and returns an instance of the
+   * ValidationError class
+   */
+  createError() {
+    return new errors.E_VALIDATION_ERROR(this.errors);
+  }
+}
