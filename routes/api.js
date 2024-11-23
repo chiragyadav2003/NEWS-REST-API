@@ -11,3 +11,5 @@ apiRouter.post("/auth/login", AuthController.login);
 
 // Profile routes - private routes
 apiRouter.get("/profile", authMiddleware, ProfileController.index);
+
+apiRouter.put("/profile/:id", authMiddleware, ProfileController.update);
