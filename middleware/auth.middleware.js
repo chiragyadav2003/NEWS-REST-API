@@ -19,9 +19,8 @@ export const authMiddleware = (req, res, next) => {
         message: "Unauthorized request",
       });
     }
-    // if user is authorized then, append jet payload in user request
+    // if user is authorized then, append jwt payload in user request as req.user
     req.user = user;
-    console.log(req.user);
   });
   next();
 };
