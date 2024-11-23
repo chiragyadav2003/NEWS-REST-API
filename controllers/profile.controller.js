@@ -52,12 +52,13 @@ export class ProfileController {
       const imageExt = profile?.name.split(".");
       const imageName = generateRandomNumber() + "." + imageExt[1];
       // make path where we'll upload the file
-      const uploadPath = process.cwd() + "/public/images/" + imageName;
+      const uploadPath = process.cwd() + "/public/profile_images/" + imageName;
       //move file to the desired location
       profile.mv(uploadPath, (err) => {
         if (err) throw err;
       });
 
+      // update in database
       const response = await prisma.user.update({
         data: {
           profile: imageName,
