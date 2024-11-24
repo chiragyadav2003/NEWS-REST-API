@@ -17,3 +17,21 @@ export const bytesToMb = (bytes) => {
 export const generateRandomNumber = () => {
   return uuidv4();
 };
+
+export const getImageUrl = (imageName, parentFolderName) => {
+  return `${process.env.APP_URL}/${parentFolderName}/${imageName}`;
+};
+
+export const getDateTime = (timestamp) => {
+  const date = new Date(timestamp);
+
+  const day = date.getDate(); // Get the day of the month
+  const month = date.toLocaleString("en-US", { month: "short" }); // Get the short month name
+  const year = date.getFullYear().toString().slice(-2); // Get the last two digits of the year
+  let hour = date.getHours(); // Get the hour
+  const minute = date.getMinutes().toString().padStart(2, "0"); // Get the minutes, padded with 0
+  const amPm = hour >= 12 ? "PM" : "AM"; // Determine AM/PM
+  hour = hour % 12 || 12; // Convert to 12-hour format
+
+  return `${day} ${month} ${year}, ${hour}:${minute} ${amPm}`;
+};
