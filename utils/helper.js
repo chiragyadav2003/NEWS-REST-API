@@ -1,4 +1,6 @@
 import { v4 as uuidv4 } from "uuid";
+import path from "path";
+import fs from "fs";
 import { SupportedMimes } from "../config/fileSystem.config.js";
 
 export const imageValidator = (size, mime) => {
@@ -38,4 +40,35 @@ export const getDateTime = (timestamp) => {
 
 export const getDefaultProfilePicture = () => {
   return getImageUrl("default_profile.jpeg", "default");
+};
+
+export const removeImage = (imageName, parentFolderName) => {
+  const imagePath = path.join(
+    process.cwd(),
+    `public/${parentFolderName}`,
+    imageName
+  );
+
+  if (fs.existsSync(path)) fs.unlinkSync(imagePath);
+};
+
+export const uploadImage = (image, parentFolderName) => {
+  // get image extension and change image name
+  const imageExt = image?.name.split(".");
+  const imageName = generateRandomNumber() + "." + imageExt[1];
+
+  // make path where we'll upload the file and move file there
+  const uploadPath = path.join(
+    process.cwd(),
+    `/public/${parentFolderName}`,
+    imageName
+  );
+
+  image.mv(uploadPath, (err) => {
+    if (err) {
+      return null;
+    }
+  });
+
+  return imageName;
 };
