@@ -6,18 +6,17 @@ import { NewsApiTransform } from "../transform/newsApiTransform.js";
 
 export class NewsController {
   static async index(req, res) {
-    // limit and skip for pagination, query parameters are string, need to convert to number
-    const page = Number(req.query.page) || 1;
-    const limit = Number(req.query.limit) || 1;
-
-    // handle page and limit inconsistencies
-    if (page <= 0) page = 1;
-    if (limit <= 0 || limit >= 100) limit = 10;
-
-    // how many records we have to skip for getting next result or offset
-    const skipRecords = (page - 1) * limit;
-
     try {
+      // limit and skip for pagination, query parameters are string, need to convert to number
+      const page = Number(req.query.page) || 1;
+      const limit = Number(req.query.limit) || 1;
+
+      // handle page and limit inconsistencies
+      if (page <= 0) page = 1;
+      if (limit <= 0 || limit >= 100) limit = 10;
+
+      // how many records we have to skip for getting next result or offset
+      const skipRecords = (page - 1) * limit;
       const news = await prisma.news.findMany({
         take: limit,
         skip: skipRecords,
