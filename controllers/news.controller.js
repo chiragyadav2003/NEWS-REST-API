@@ -7,7 +7,18 @@ import { NewsApiTransform } from "../transform/newsApiTranform.js";
 export class NewsController {
   static async index(req, res) {
     try {
-      const news = await prisma.news.findMany({});
+      const news = await prisma.news.findMany({
+        include: {
+          user: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              profile: true,
+            },
+          },
+        },
+      });
 
       // handle case for no news
       if (!news || news.length === 0) {
