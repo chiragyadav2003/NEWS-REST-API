@@ -35,3 +35,7 @@ export const getDateTime = (timestamp) => {
 
   return `${day} ${month} ${year}, ${hour}:${minute} ${amPm}`;
 };
+
+export const getDefaultProfilePicture = () => {
+  return getImageUrl("default_profile.jpeg", "default");
+};
