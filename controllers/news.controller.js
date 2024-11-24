@@ -61,10 +61,17 @@ export class NewsController {
         },
       });
     } catch (error) {
-      return res.status(500).json({
-        success: false,
-        message: "Something went wrong. Please try again later.",
-      });
+      if (error instanceof errors.E_VALIDATION_ERROR) {
+        return res.status(400).json({
+          success: false,
+          errors: error.messages,
+        });
+      } else {
+        return res.status(500).json({
+          success: false,
+          message: "Something went wrong. Please try again later.",
+        });
+      }
     }
   }
 
@@ -138,7 +145,57 @@ export class NewsController {
     }
   }
 
-  static async show(req, res) {}
+  static async show(req, res) {
+    try {
+      const { id } = req.params;
+      console.log(id);
+
+      const news = await prisma.news.findUnique({
+        where: {
+          id: Number(id),
+        },
+        include: {
+          user: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              profile: true,
+            },
+          },
+        },
+      });
+
+      // handle case for no news
+      if (!news) {
+        return res.status(200).json({
+          success: true,
+          news: null,
+          message: "Invalid news request.",
+        });
+      }
+
+      const transformedNews = NewsApiTransform.transform(news, "news_images");
+
+      return res.status(200).json({
+        success: true,
+        message: "News retrieves successfully.",
+        news: transformedNews,
+      });
+    } catch (error) {
+      if (error instanceof errors.E_VALIDATION_ERROR) {
+        return res.status(400).json({
+          success: false,
+          errors: error.messages,
+        });
+      } else {
+        return res.status(500).json({
+          success: false,
+          message: "Something went wrong. Please try again later.",
+        });
+      }
+    }
+  }
 
   static async update(req, res) {}
 
