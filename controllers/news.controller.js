@@ -2,12 +2,25 @@ import vine, { errors } from "@vinejs/vine";
 import { newsSchema } from "../validations/news.validation.js";
 import { generateRandomNumber, imageValidator } from "../utils/helper.js";
 import { prisma } from "../DB/db.config.js";
-import { NewsApiTransform } from "../transform/newsApiTranform.js";
+import { NewsApiTransform } from "../transform/newsApiTransform.js";
 
 export class NewsController {
   static async index(req, res) {
+    // limit and skip for pagination, query parameters are string, need to convert to number
+    const page = Number(req.query.page) || 1;
+    const limit = Number(req.query.limit) || 1;
+
+    // handle page and limit inconsistencies
+    if (page <= 0) page = 1;
+    if (limit <= 0 || limit >= 100) limit = 10;
+
+    // how many records we have to skip for getting next result or offset
+    const skipRecords = (page - 1) * limit;
+
     try {
       const news = await prisma.news.findMany({
+        take: limit,
+        skip: skipRecords,
         include: {
           user: {
             select: {
@@ -34,10 +47,19 @@ export class NewsController {
         NewsApiTransform.transform(item, "news_images")
       );
 
+      // metadata : total news count and with its help total pages
+      const totalNews = await prisma.news.count();
+      const totalPages = Math.ceil(totalNews / limit);
+
       return res.status(200).json({
         success: true,
         message: "News retrieved successfully.",
         news: transformedNews,
+        metadata: {
+          totalPages,
+          currentPage: page,
+          currentLimit: limit,
+        },
       });
     } catch (error) {
       return res.status(500).json({
