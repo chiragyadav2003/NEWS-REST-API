@@ -1,12 +1,21 @@
 import { prisma } from "../DB/db.config.js";
-import { generateRandomNumber, imageValidator } from "../utils/helper.js";
+import { ProfileApiTransform } from "../transform/profileApiTransform.js";
+import {
+  generateRandomNumber,
+  imageValidator,
+  uploadImage,
+} from "../utils/helper.js";
 
 export class ProfileController {
   static async index(req, res) {
     try {
       const user = req.user;
-      return res.status(200).json({ success: true, user });
+      console.log(user);
+      return res
+        .status(200)
+        .json({ success: true, user: ProfileApiTransform.transform(user) });
     } catch (error) {
+      console.log(error);
       return res.status(500).json({
         success: false,
         message: "Something went wrong...",
@@ -23,7 +32,6 @@ export class ProfileController {
       const { id } = req.params; //id in params if of string type
       const authUser = req.user;
 
-      // console.log(id, authUser.id, typeof id, typeof authUser.id);
       if (Number(id) !== authUser.id) {
         return res.status(400).json({
           success: false,
@@ -48,15 +56,14 @@ export class ProfileController {
         });
       }
 
-      // get image extension and change image name
-      const imageExt = profile?.name.split(".");
-      const imageName = generateRandomNumber() + "." + imageExt[1];
-      // make path where we'll upload the file
-      const uploadPath = process.cwd() + "/public/profile_images/" + imageName;
-      //move file to the desired location
-      profile.mv(uploadPath, (err) => {
-        if (err) throw err;
-      });
+      // upload new image
+      const imageName = uploadImage(profile, "profile_images");
+      if (!imageName) {
+        return res.status(400).json({
+          success: false,
+          message: "Image upload failed",
+        });
+      }
 
       // update in database
       const response = await prisma.user.update({
@@ -71,9 +78,10 @@ export class ProfileController {
       return res.status(200).json({
         success: true,
         message: "Profile image updated successfully...",
-        response,
+        response: ProfileApiTransform.transform(response),
       });
     } catch (error) {
+      console.log(error);
       res.status(500).json({
         success: false,
         message: "Something went wrong.Please try again",

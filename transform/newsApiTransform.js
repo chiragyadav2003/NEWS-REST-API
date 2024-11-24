@@ -4,14 +4,13 @@ import {
   getImageUrl,
 } from "../utils/helper.js";
 
-// "parentFolderName" for profile : profile_images , for news : news_images
 export class NewsApiTransform {
-  static transform(news, parentFolderName) {
+  static transform(news) {
     return {
       id: news.id,
       title: news.title,
       content: news.content,
-      image: getImageUrl(news.image, parentFolderName),
+      image: getImageUrl(news.image, "news_images"),
       created_at: getDateTime(news.created_at),
       writer_info: {
         id: news.user.id,
