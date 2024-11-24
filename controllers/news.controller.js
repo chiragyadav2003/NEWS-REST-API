@@ -2,9 +2,39 @@ import vine, { errors } from "@vinejs/vine";
 import { newsSchema } from "../validations/news.validation.js";
 import { generateRandomNumber, imageValidator } from "../utils/helper.js";
 import { prisma } from "../DB/db.config.js";
+import { NewsApiTransform } from "../transform/newsApiTranform.js";
 
 export class NewsController {
-  static async index(req, res) {}
+  static async index(req, res) {
+    try {
+      const news = await prisma.news.findMany({});
+
+      // handle case for no news
+      if (!news || news.length === 0) {
+        return res.status(200).json({
+          success: true,
+          news: null,
+          message: "No news available.",
+        });
+      }
+
+      // transform news
+      const transformedNews = news.map((item) =>
+        NewsApiTransform.transform(item, "news_images")
+      );
+
+      return res.status(200).json({
+        success: true,
+        message: "News retrieved successfully.",
+        news: transformedNews,
+      });
+    } catch (error) {
+      return res.status(500).json({
+        success: false,
+        message: "Something went wrong. Please try again later.",
+      });
+    }
+  }
 
   static async store(req, res) {
     try {
