@@ -102,7 +102,7 @@ export class AuthController {
         profile: findUser.profile,
       };
       const token = jwt.sign(payloadData, process.env.JWT_SECRET, {
-        expiresIn: "1d",
+        expiresIn: "365d",
       });
 
       return res.status(200).json({

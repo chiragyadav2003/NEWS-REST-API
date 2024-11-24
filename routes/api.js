@@ -18,5 +18,5 @@ apiRouter.put("/profile/:id", authMiddleware, ProfileController.update);
 apiRouter.get("/news", NewsController.index);
 apiRouter.post("/news", authMiddleware, NewsController.store);
 apiRouter.get("/news/:id", NewsController.show);
-apiRouter.put("/news?:id", authMiddleware, NewsController.update);
+apiRouter.put("/news/:id", authMiddleware, NewsController.update);
 apiRouter.delete("/news/:id", authMiddleware, NewsController.destroy);
