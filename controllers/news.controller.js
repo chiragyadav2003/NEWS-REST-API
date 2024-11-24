@@ -43,7 +43,7 @@ export class NewsController {
 
       // transform news
       const transformedNews = news.map((item) =>
-        NewsApiTransform.transform(item, "news_images")
+        NewsApiTransform.transform(item)
       );
 
       // metadata : total news count and with its help total pages
@@ -147,7 +147,6 @@ export class NewsController {
   static async show(req, res) {
     try {
       const { id } = req.params;
-      console.log(id);
 
       const news = await prisma.news.findUnique({
         where: {
@@ -174,7 +173,7 @@ export class NewsController {
         });
       }
 
-      const transformedNews = NewsApiTransform.transform(news, "news_images");
+      const transformedNews = NewsApiTransform.transform(news);
 
       return res.status(200).json({
         success: true,
@@ -218,7 +217,7 @@ export class NewsController {
       }
 
       // check if user is writer i.e, authorized for updating news
-      if (Number(user.id) !== news.user_id) {
+      if (user.id !== news.user_id) {
         return res.status(400).json({
           success: false,
           message: "UnAuthorized request.",
@@ -272,7 +271,6 @@ export class NewsController {
         updatedNews,
       });
     } catch (error) {
-      console.log({ error });
       if (error instanceof errors.E_VALIDATION_ERROR) {
         return res.status(400).json({
           success: false,
@@ -287,5 +285,60 @@ export class NewsController {
     }
   }
 
-  static async destroy(req, res) {}
+  static async destroy(req, res) {
+    try {
+      const { id } = req.params;
+      const user = req.user;
+
+      const news = await prisma.news.findUnique({
+        where: {
+          id: Number(id),
+        },
+      });
+
+      // handle case for no news
+      if (!news) {
+        return res.status(200).json({
+          success: true,
+          news: null,
+          message: "Invalid news request.",
+        });
+      }
+
+      // check if user is writer i.e, authorized for updating news
+      if (user.id !== news.user_id) {
+        return res.status(400).json({
+          success: false,
+          message: "UnAuthorized request.",
+        });
+      }
+
+      // delete image from file system
+      removeImage(news.image, "news_images");
+
+      // delete from db
+      await prisma.news.delete({
+        where: {
+          id: Number(id),
+        },
+      });
+
+      return res.status(200).json({
+        success: true,
+        message: "News deleted successfully.",
+      });
+    } catch (error) {
+      if (error instanceof errors.E_VALIDATION_ERROR) {
+        return res.status(400).json({
+          success: false,
+          errors: error.messages,
+        });
+      } else {
+        return res.status(500).json({
+          success: false,
+          message: "Something went wrong. Please try again later.",
+        });
+      }
+    }
+  }
 }
