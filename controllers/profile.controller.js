@@ -15,11 +15,17 @@ export class ProfileController {
         .status(200)
         .json({ success: true, user: ProfileApiTransform.transform(user) });
     } catch (error) {
-      console.log(error);
-      return res.status(500).json({
-        success: false,
-        message: "Something went wrong...",
-      });
+      if (error instanceof errors.E_VALIDATION_ERROR) {
+        return res.status(400).json({
+          success: false,
+          errors: error.messages,
+        });
+      } else {
+        return res.status(500).json({
+          success: false,
+          message: "Something went wrong. Please try again later.",
+        });
+      }
     }
   }
 
@@ -81,11 +87,17 @@ export class ProfileController {
         response: ProfileApiTransform.transform(response),
       });
     } catch (error) {
-      console.log(error);
-      res.status(500).json({
-        success: false,
-        message: "Something went wrong.Please try again",
-      });
+      if (error instanceof errors.E_VALIDATION_ERROR) {
+        return res.status(400).json({
+          success: false,
+          errors: error.messages,
+        });
+      } else {
+        return res.status(500).json({
+          success: false,
+          message: "Something went wrong. Please try again later.",
+        });
+      }
     }
   }
 
