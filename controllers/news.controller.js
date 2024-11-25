@@ -3,6 +3,7 @@ import { newsSchema, updateSchema } from "../validations/news.validation.js";
 import { imageValidator, removeImage, uploadImage } from "../utils/helper.js";
 import { prisma } from "../DB/db.config.js";
 import { NewsApiTransform } from "../transform/newsApiTransform.js";
+import { client } from "../config/redis.client.config.js";
 
 export class NewsController {
   static async index(req, res) {
@@ -14,6 +15,18 @@ export class NewsController {
       // handle page and limit inconsistencies
       if (page <= 0) page = 1;
       if (limit <= 0 || limit >= 100) limit = 10;
+
+      // NOTE: create a unique cache key based on pagination
+      const cachedKey = `news:page:${page}:limit:${limit}`;
+      // try t get cached data
+      const cachedNews = await client.get(cachedKey);
+      if (cachedNews) {
+        const parsedNews = JSON.parse(cachedNews);
+        return res.status(200).json({
+          messageCache: "News retrieved successfully from cachedData.",
+          parsedNews,
+        });
+      }
 
       // how many records we have to skip for getting next result or offset
       const skipRecords = (page - 1) * limit;
@@ -50,7 +63,7 @@ export class NewsController {
       const totalNews = await prisma.news.count();
       const totalPages = Math.ceil(totalNews / limit);
 
-      return res.status(200).json({
+      const responseData = {
         success: true,
         message: "News retrieved successfully.",
         news: transformedNews,
@@ -59,7 +72,12 @@ export class NewsController {
           currentPage: page,
           currentLimit: limit,
         },
-      });
+      };
+
+      // NOTE: cache the response for 5 minutes
+      await client.set(cachedKey, JSON.stringify(responseData), "EX", 300);
+
+      return res.status(200).json(responseData);
     } catch (error) {
       if (error instanceof errors.E_VALIDATION_ERROR) {
         return res.status(400).json({
