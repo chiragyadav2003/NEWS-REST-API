@@ -3,6 +3,7 @@ import "dotenv/config";
 import fileUpload from "express-fileupload";
 import helmet from "helmet";
 import cors from "cors";
+import { limiter } from "./config/ratelimit.config.js";
 
 const app = express();
 const PORT = process.env.PORT || 8000;
@@ -14,6 +15,7 @@ app.use(helmet());
 app.use(cors());
 app.use(express.static("public")); //statically serve files from 'public' directory
 app.use(fileUpload());
+app.use(limiter);
 
 app.get("/", (req, res) => {
   return res.status(200).json({
