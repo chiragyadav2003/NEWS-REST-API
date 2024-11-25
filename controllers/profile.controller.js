@@ -9,8 +9,21 @@ import {
 export class ProfileController {
   static async index(req, res) {
     try {
-      const user = req.user;
-      console.log(user);
+      const id = req.user.id;
+
+      // NOTE: we will refetch data from database, in case of profile update, we will not receive the latest profile
+      const user = await prisma.user.findUnique({
+        where: {
+          id,
+        },
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          profile: true,
+        },
+      });
+
       return res
         .status(200)
         .json({ success: true, user: ProfileApiTransform.transform(user) });
