@@ -4,6 +4,7 @@ import { imageValidator, removeImage, uploadImage } from "../utils/helper.js";
 import { prisma } from "../DB/db.config.js";
 import { NewsApiTransform } from "../transform/newsApiTransform.js";
 import { client } from "../config/redis.client.config.js";
+import { deleteRedisPattern } from "../utils/deleteRedisPattern.js";
 
 export class NewsController {
   static async index(req, res) {
@@ -11,7 +12,7 @@ export class NewsController {
       // limit and skip for pagination
       // query parameters are string, need to convert to number
       const page = Number(req.query.page) || 1;
-      const limit = Number(req.query.limit) || 1;
+      const limit = Number(req.query.limit) || 10;
 
       // handle page and limit inconsistencies
       if (page <= 0) page = 1;
@@ -43,8 +44,8 @@ export class NewsController {
 
       // handle case for no news
       if (!news || news.length === 0) {
-        return res.status(200).json({
-          success: true,
+        return res.status(404).json({
+          success: false,
           news: null,
           message: "No news available.",
         });
@@ -118,8 +119,8 @@ export class NewsController {
 
       // handle case for no news
       if (!news) {
-        return res.status(200).json({
-          success: true,
+        return res.status(404).json({
+          success: false,
           news: null,
           message: "Invalid news request.",
         });
@@ -202,7 +203,7 @@ export class NewsController {
       });
 
       // * invalidate news cache list, new news added, remove old cached data
-      await client.del("news:*");
+      await deleteRedisPattern("news:*"); //modified function for wildcard deletion
 
       return res.status(200).json({
         success: true,
@@ -247,7 +248,7 @@ export class NewsController {
 
       // check if user is writer i.e, authorized for updating news
       if (user.id !== news.user_id) {
-        return res.status(400).json({
+        return res.status(403).json({
           success: false,
           message: "UnAuthorized request.",
         });
@@ -296,7 +297,7 @@ export class NewsController {
 
       // * invalidate specific news items cache and list cache
       await client.del(`news:id:${id}`); // Remove specific news item cache
-      await client.del("news:*"); //wildcard deletion
+      await deleteRedisPattern("news:*"); //wildcard deletion
 
       return res.status(200).json({
         success: true,
@@ -331,8 +332,8 @@ export class NewsController {
 
       // handle case for no news
       if (!news) {
-        return res.status(200).json({
-          success: true,
+        return res.status(404).json({
+          success: false,
           news: null,
           message: "Invalid news request.",
         });
@@ -358,7 +359,7 @@ export class NewsController {
 
       // * Invalidate specific news item cache and list caches
       await client.del(`news:id:${id}`); // Specific item deletion
-      await client.del("news:*"); // Wildcard deletion
+      await deleteRedisPattern("news:*"); // Wildcard deletion
 
       return res.status(200).json({
         success: true,
