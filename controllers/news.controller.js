@@ -5,6 +5,7 @@ import { prisma } from "../DB/db.config.js";
 import { NewsApiTransform } from "../transform/newsApiTransform.js";
 import { client } from "../config/redis.client.config.js";
 import { deleteRedisPattern } from "../utils/deleteRedisPattern.js";
+import { logger } from "../config/logger.js";
 
 export class NewsController {
   static async index(req, res) {
@@ -14,6 +15,8 @@ export class NewsController {
       const page = Number(req.query.page) || 1;
       const limit = Number(req.query.limit) || 10;
 
+      logger.info(`Fetching news with page : ${page}, limit : ${limit}`);
+
       // handle page and limit inconsistencies
       if (page <= 0) page = 1;
       if (limit <= 0 || limit >= 100) limit = 10;
@@ -22,9 +25,13 @@ export class NewsController {
       const cachedKey = `news:page:${page}:limit:${limit}`;
       const cachedNews = await client.get(cachedKey);
       if (cachedNews) {
+        logger.info(`Cache hit it for key : ${cachedKey}`);
         return res.status(200).json(JSON.parse(cachedNews));
       }
 
+      logger.info(
+        `Cache miss for key : ${cachedKey}, fetching from the database.`
+      );
       // how many records we have to skip for getting next result or offset
       const skipRecords = (page - 1) * limit;
       const news = await prisma.news.findMany({
@@ -44,6 +51,7 @@ export class NewsController {
 
       // handle case for no news
       if (!news || news.length === 0) {
+        logger.warn(`No news found for page : ${page}, limit : ${limit}`);
         return res.status(404).json({
           success: false,
           news: null,
@@ -73,9 +81,11 @@ export class NewsController {
 
       // NOTE: cache the response for 5 minutes
       await client.set(cachedKey, JSON.stringify(responseData), "EX", 300);
+      logger.info(`Cached response for key : ${cachedKey}`);
 
       return res.status(200).json(responseData);
     } catch (error) {
+      logger.error(`Error in index method : ${error.message}`, { error });
       if (error instanceof errors.E_VALIDATION_ERROR) {
         return res.status(400).json({
           success: false,
@@ -94,10 +104,13 @@ export class NewsController {
     try {
       const { id } = req.params;
 
+      logger.info(`Fetching news with ID: ${id}`);
+
       // * create a unique cache key for the specified news items
       const cachedKey = `news:id:${id}`;
       const cachedNews = await client.get(cachedKey);
       if (cachedNews) {
+        logger.info(`Cache hit it for key : ${cachedKey}`);
         return res.status(200).json(JSON.parse(cachedNews));
       }
 
@@ -119,6 +132,7 @@ export class NewsController {
 
       // handle case for no news
       if (!news) {
+        logger.warn(`No news found with ID: ${id}`);
         return res.status(404).json({
           success: false,
           news: null,
@@ -136,9 +150,11 @@ export class NewsController {
 
       // * cache the response for 5 minutes
       await client.set(cachedKey, JSON.stringify(responseData), "EX", 300);
+      logger.info(`Cached response for key: ${cachedKey}`);
 
       return res.status(200).json(responseData);
     } catch (error) {
+      logger.error(`Error in show method: ${error.message}`, { error });
       if (error instanceof errors.E_VALIDATION_ERROR) {
         return res.status(400).json({
           success: false,
@@ -161,6 +177,8 @@ export class NewsController {
       // validate form entities (title, content) with news schema
       const validator = vine.compile(newsSchema);
       const payload = await validator.validate(body);
+
+      logger.info(`Validating and storing news for user ID: ${user.id}`);
 
       // validate file and its size and mimeType i.e, it is an image
       if (!req.files || Object.keys(req.files).length === 0) {
@@ -205,12 +223,14 @@ export class NewsController {
       // * invalidate news cache list, new news added, remove old cached data
       await deleteRedisPattern("news:*"); //modified function for wildcard deletion
 
+      logger.info(`News created successfully with ID: ${news.id}`);
       return res.status(200).json({
         success: true,
         message: "News created successfully!",
         news,
       });
     } catch (error) {
+      logger.error(`Error in store method: ${error.message}`, { error });
       if (error instanceof errors.E_VALIDATION_ERROR) {
         return res.status(400).json({
           success: false,
@@ -230,6 +250,8 @@ export class NewsController {
       const { id } = req.params;
       const user = req.user;
       const body = req.body;
+
+      logger.info(`Updating news with ID: ${id} by user: ${user.id}`);
 
       const news = await prisma.news.findUnique({
         where: {
@@ -299,12 +321,15 @@ export class NewsController {
       await client.del(`news:id:${id}`); // Remove specific news item cache
       await deleteRedisPattern("news:*"); //wildcard deletion
 
+      logger.info(`News updated successfully with ID: ${updatedNews.id}`);
+
       return res.status(200).json({
         success: true,
         message: "News updated successfully.",
         updatedNews,
       });
     } catch (error) {
+      logger.error(`Error in update method: ${error.message}`, { error });
       if (error instanceof errors.E_VALIDATION_ERROR) {
         return res.status(400).json({
           success: false,
@@ -323,6 +348,8 @@ export class NewsController {
     try {
       const { id } = req.params;
       const user = req.user;
+
+      logger.info(`Deleting news with ID: ${id} by user: ${user.id}`);
 
       const news = await prisma.news.findUnique({
         where: {
