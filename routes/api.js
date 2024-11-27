@@ -6,9 +6,10 @@ import { NewsController } from "../controllers/news.controller.js";
 
 export const apiRouter = Router();
 
+// * Auth routes
 apiRouter.post("/auth/register", AuthController.register);
-
 apiRouter.post("/auth/login", AuthController.login);
+apiRouter.get("/send-email", AuthController.sendEmail);
 
 // * Profile routes - private routes
 apiRouter.get("/profile", authMiddleware, ProfileController.index);
