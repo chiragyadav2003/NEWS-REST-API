@@ -4,7 +4,7 @@ import jwt from "jsonwebtoken";
 import { prisma } from "../DB/db.config.js";
 import { loginSchema, registerSchema } from "../validations/auth.validation.js";
 import { logger } from "../config/logger.js";
-import { sendEmail } from "../config/mailer.config.js";
+import { emailQueue, emailQueueName } from "../jobs/sendEmail.job.js";
 
 export class AuthController {
   static async register(req, res) {
@@ -132,18 +132,30 @@ export class AuthController {
       const { email } = req.query;
       logger.info(`User email is : ${email}`);
 
-      const payload = {
-        toEmail: email,
-        subject: "Hey, i am just testing",
-        body: "<h1>Hello, testing from MASTER_BACKEND repo.</h1>",
-      };
+      const payload = [
+        {
+          toEmail: email,
+          subject: "Mail : 1",
+          body: "<h1>This is mail:1 of 3 concurrent mails</h1>",
+        },
+        {
+          toEmail: email,
+          subject: "Mail : 2",
+          body: "<h1>This is mail:2 of 3 concurrent mails</h1>",
+        },
+        {
+          toEmail: email,
+          subject: "Mail : 3",
+          body: "<h1>This is mail:3 of 3 concurrent mails</h1>",
+        },
+      ];
 
-      await sendEmail(payload.toEmail, payload.subject, payload.body);
+      await emailQueue.add(emailQueueName, payload);
       logger.info(`Email is sent successfully to user_email : ${email}`);
 
       return res.status(200).json({
         success: true,
-        message: "Email sent successfully.",
+        message: "Job added successfully.",
       });
     } catch (error) {
       logger.error(`Error in send-email method : ${error.message}`, { error });
