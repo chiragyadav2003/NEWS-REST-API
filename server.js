@@ -45,6 +45,9 @@ app.use((err, req, res, next) => {
   });
 });
 
+// * jobs import
+import "./jobs/index.js";
+
 app.listen(PORT, () => {
   console.log(`Server is running on port : ${PORT}`);
 });
