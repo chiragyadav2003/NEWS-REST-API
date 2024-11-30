@@ -28,5 +28,10 @@ export const logger = winston.createLogger({
     new winston.transports.File({
       filename: path.join(logFolder, "logs.log"),
     }),
+    // Log warnings to logs/warn.log
+    new winston.transports.File({
+      filename: path.join(logFolder, "warn.log"),
+      level: "warn",
+    }),
   ],
 });
