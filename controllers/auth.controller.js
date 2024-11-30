@@ -6,6 +6,10 @@ import { loginSchema, registerSchema } from "../validations/auth.validation.js";
 import { logger } from "../config/logger.js";
 import { emailQueue, emailQueueName } from "../jobs/sendEmail.job.js";
 import { generateAccessAndRefreshToken } from "../utils/generateToken.js";
+import {
+  accessTokenCookieOptions,
+  refreshTokenCookieOptions,
+} from "../utils/cookieOptions.js";
 
 export class AuthController {
   static async register(req, res) {
@@ -118,19 +122,8 @@ export class AuthController {
       );
 
       // Set tokens in cookies
-      res.cookie("accessToken", accessToken, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "strict",
-        maxAge: 15 * 60 * 1000, // 15 minutes
-      });
-
-      res.cookie("refreshToken", refreshToken, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "strict",
-        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-      });
+      res.cookie("accessToken", accessToken, accessTokenCookieOptions);
+      res.cookie("refreshToken", refreshToken, refreshTokenCookieOptions);
 
       logger.info(`Login successful for user with email: ${payload.email}`);
 

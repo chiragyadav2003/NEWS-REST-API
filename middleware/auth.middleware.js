@@ -2,6 +2,10 @@ import jwt from "jsonwebtoken";
 import { prisma } from "../DB/db.config.js";
 import { generateAccessAndRefreshToken } from "../utils/generateToken.js";
 import { logger } from "../config/logger.js";
+import {
+  accessTokenCookieOptions,
+  refreshTokenCookieOptions,
+} from "../utils/cookieOptions.js";
 
 export const authMiddleware = async (req, res, next) => {
   const accessToken =
@@ -70,19 +74,9 @@ export const authMiddleware = async (req, res, next) => {
         await generateAccessAndRefreshToken(decoded.user.id);
 
       // Set new tokens in cookies
-      res.cookie("refreshToken", newRefreshToken, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "strict",
-        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-      });
+      res.cookie("refreshToken", newRefreshToken, refreshTokenCookieOptions);
 
-      res.cookie("accessToken", newAccessToken, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "strict",
-        maxAge: 15 * 60 * 1000, // 15 minutes
-      });
+      res.cookie("accessToken", newAccessToken, accessTokenCookieOptions);
 
       logger.info(
         `Generated new access and refresh tokens for user with id-${decoded.user.id}`
