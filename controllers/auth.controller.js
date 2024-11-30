@@ -5,6 +5,7 @@ import { prisma } from "../DB/db.config.js";
 import { loginSchema, registerSchema } from "../validations/auth.validation.js";
 import { logger } from "../config/logger.js";
 import { emailQueue, emailQueueName } from "../jobs/sendEmail.job.js";
+import { generateAccessAndRefreshToken } from "../utils/generateToken.js";
 
 export class AuthController {
   static async register(req, res) {
@@ -96,21 +97,30 @@ export class AuthController {
         });
       }
 
-      // generate access token
-      const payloadData = {
-        id: findUser.id,
-        name: findUser.name,
-        email: findUser.email,
-        profile: findUser.profile,
-      };
-      const token = jwt.sign(payloadData, process.env.JWT_SECRET, {
-        expiresIn: "365d",
+      // generate access and refresh token
+      const { accessToken, refreshToken } = await generateAccessAndRefreshToken(
+        findUser.id
+      );
+
+      // Set tokens in cookies
+      res.cookie("accessToken", accessToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "strict",
+        maxAge: 15 * 60 * 1000, // 15 minutes
+      });
+
+      res.cookie("refreshToken", refreshToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "strict",
+        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
       });
 
       return res.status(200).json({
         success: true,
         message: "Login successful!!!",
-        access_token: `Bearer ${token}`,
+        access_token: `Bearer ${accessToken}`,
       });
     } catch (error) {
       if (error instanceof errors.E_VALIDATION_ERROR) {
