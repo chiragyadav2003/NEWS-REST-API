@@ -4,12 +4,14 @@ import fileUpload from "express-fileupload";
 import helmet from "helmet";
 import cors from "cors";
 import cookieParser from "cookie-parser";
+import morgan from "morgan";
 import { limiter } from "./config/ratelimit.config.js";
 
 const app = express();
 const PORT = process.env.PORT || 8000;
 
 // * Middlewares
+app.use(morgan("dev"));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
